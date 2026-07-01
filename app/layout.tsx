@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: 'CryptoViz',
   description: 'A visualizer for various cryptographic algorithms.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.svg',
   },
 };
 
