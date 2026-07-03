@@ -25,6 +25,8 @@ interface WorkerResponse {
   error?: string
 }
 
+type WorkerResponseMessage = WorkerResponse | Uint8Array;
+
 export function useCipherWorker() {
   const workerRef = useRef<Worker | null>(null)
   const [loading, setLoading] = useState(false)
@@ -50,7 +52,7 @@ export function useCipherWorker() {
       new URL('../workers/cipher.worker.ts', import.meta.url)
     )
 
-    worker.onmessage = (event: MessageEvent<any>) => {
+    worker.onmessage = (event: MessageEvent<WorkerResponseMessage>) => {
       let data = event.data
       if (data instanceof Uint8Array) {
         const decoder = new TextDecoder()
@@ -101,7 +103,7 @@ export function useCipherWorker() {
             const worker = new Worker(
               new URL('../workers/cipher.worker.ts', import.meta.url)
             )
-            worker.onmessage = (event: MessageEvent<any>) => {
+            worker.onmessage = (event: MessageEvent<WorkerResponseMessage>) => {
               let data = event.data
               if (data instanceof Uint8Array) {
                 const decoder = new TextDecoder()
@@ -133,18 +135,26 @@ export function useCipherWorker() {
         setLoading(true)
         setError(null)
 
-        const payloadStr = JSON.stringify({
-          id,
-          action,
-          cipherId,
-          input,
-          key,
-          options,
-        })
-        const encoder = new TextEncoder()
-        const payloadBuffer = encoder.encode(payloadStr)
+        try {
+          const payloadStr = JSON.stringify({
+            id,
+            action,
+            cipherId,
+            input,
+            key,
+            options,
+          })
+          const encoder = new TextEncoder()
+          const payloadBuffer = encoder.encode(payloadStr)
 
-        workerRef.current.postMessage(payloadBuffer, [payloadBuffer.buffer])
+          workerRef.current.postMessage(payloadBuffer, [payloadBuffer.buffer])
+        } catch (err: unknown) {
+          activeRequestsRef.current.delete(id)
+          if (activeRequestsRef.current.size === 0) setLoading(false)
+          const message = err instanceof Error ? err.message : String(err)
+          setError(message)
+          reject(new Error(message))
+        }
       })
     },
     []

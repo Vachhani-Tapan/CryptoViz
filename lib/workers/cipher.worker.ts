@@ -41,7 +41,9 @@ interface WorkerResponse {
   error?: string
 }
 
-self.addEventListener('message', (event: MessageEvent<any>) => {
+type WorkerRequestMessage = WorkerRequest | Uint8Array;
+
+self.addEventListener('message', (event: MessageEvent<WorkerRequestMessage>) => {
   let requestData = event.data
   if (requestData instanceof Uint8Array) {
     const decoder = new TextDecoder()
@@ -162,11 +164,11 @@ self.addEventListener('message', (event: MessageEvent<any>) => {
     const encoder = new TextEncoder()
     const responseBuffer = encoder.encode(responsePayload)
     self.postMessage(responseBuffer, [responseBuffer.buffer])
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = JSON.stringify({
       id,
       success: false,
-      error: error?.message || String(error),
+      error: error instanceof Error ? error.message : String(error),
     })
     const encoder = new TextEncoder()
     const errorBuffer = encoder.encode(errorPayload)
