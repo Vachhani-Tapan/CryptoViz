@@ -25,6 +25,8 @@ interface WorkerResponse {
   error?: string
 }
 
+type WorkerResponseMessage = WorkerResponse | Uint8Array;
+
 export function useCipherWorker() {
   const workerRef = useRef<Worker | null>(null)
   const [loading, setLoading] = useState(false)
@@ -126,14 +128,26 @@ export function useCipherWorker() {
         setLoading(true)
         setError(null)
 
-        workerRef.current.postMessage({
-          id,
-          action,
-          cipherId,
-          input,
-          key,
-          options,
-        } as WorkerRequest)
+        try {
+          const payloadStr = JSON.stringify({
+            id,
+            action,
+            cipherId,
+            input,
+            key,
+            options,
+          })
+          const encoder = new TextEncoder()
+          const payloadBuffer = encoder.encode(payloadStr)
+
+          workerRef.current.postMessage(payloadBuffer, [payloadBuffer.buffer])
+        } catch (err: unknown) {
+          activeRequestsRef.current.delete(id)
+          if (activeRequestsRef.current.size === 0) setLoading(false)
+          const message = err instanceof Error ? err.message : String(err)
+          setError(message)
+          reject(new Error(message))
+        }
       })
     },
     []
