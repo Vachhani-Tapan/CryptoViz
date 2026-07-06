@@ -27,8 +27,8 @@ export class CipherError extends Error {
   }
 }
 
-/** Max input size: 4096 bytes */
-const MAX_INPUT_BYTES = 4096
+/** Max input size: 2MB (allowing large benchmark tests) */
+const MAX_INPUT_BYTES = 2 * 1024 * 1024
 
 /**
  * Validate input is present and within size limits.

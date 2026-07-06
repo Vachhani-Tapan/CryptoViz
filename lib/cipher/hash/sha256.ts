@@ -85,8 +85,8 @@ export function validateHashInput(input: unknown): asserts input is string {
     throw new CipherError('INPUT_REQUIRED', 'Input must be a string.')
   }
   const byteLength = new TextEncoder().encode(input).length
-  if (byteLength > 4096) {
-    throw new CipherError('INPUT_TOO_LONG', `Input exceeds maximum size of 4096 bytes (got ${byteLength}).`)
+  if (byteLength > 2 * 1024 * 1024) {
+    throw new CipherError('INPUT_TOO_LONG', `Input exceeds maximum size of 2MB (got ${byteLength}).`)
   }
 }
 
