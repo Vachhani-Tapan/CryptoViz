@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 import type { CipherDefinition } from '../../lib/cipher/registry'
 import { useCipherWorker } from '../../lib/hooks/useCipherWorker'
 import StepAnimator from './StepAnimator'
+import dynamic from 'next/dynamic'
 
 const PlayfairGrid = dynamic(() => import('./PlayfairGrid'), { ssr: false })
 const RailFenceViz = dynamic(() => import('./RailFenceViz'), { ssr: false })
