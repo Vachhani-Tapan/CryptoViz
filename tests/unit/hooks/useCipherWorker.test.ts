@@ -55,17 +55,19 @@ describe('useCipherWorker', () => {
     const decoder = new TextDecoder()
     const parsedPayload = JSON.parse(decoder.decode(sentBuffer))
 
-    expect(parsedPayload.cipherId).toBe('caesar')
-    expect(parsedPayload.input).toBe('hello')
-    expect(parsedPayload.key).toBe('3')
+    expect(parsedPayload.type).toBe('encrypt')
+    expect(parsedPayload.payload.cipherId).toBe('caesar')
+    expect(parsedPayload.payload.input).toBe('hello')
+    expect(parsedPayload.payload.key).toBe('3')
 
     // Simulate worker success
     act(() => {
       worker.onmessage!({
         data: {
-          id: parsedPayload.id,
+          requestId: parsedPayload.requestId,
           success: true,
-          result: { output: 'khoor', steps: [] }
+          payload: { result: { output: 'khoor', steps: [] } },
+          timings: { durationMs: 5 }
         }
       } as MessageEvent)
     })
@@ -101,15 +103,16 @@ describe('useCipherWorker', () => {
     const secondWorker = MockWorker.lastInstance()!
     const secondCallArgs = secondWorker.postMessage.mock.calls[0]
     const parsedPayload2 = JSON.parse(new TextDecoder().decode(secondCallArgs[0] as Uint8Array))
-    expect(parsedPayload2.input).toBe('world')
+    expect(parsedPayload2.payload.input).toBe('world')
 
     // Complete the second request successfully
     act(() => {
       secondWorker.onmessage!({
         data: {
-          id: parsedPayload2.id,
+          requestId: parsedPayload2.requestId,
           success: true,
-          result: { output: 'zruog', steps: [] }
+          payload: { result: { output: 'zruog', steps: [] } },
+          timings: { durationMs: 8 }
         }
       } as MessageEvent)
     })

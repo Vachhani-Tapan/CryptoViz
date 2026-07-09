@@ -8,24 +8,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { CipherResult } from '../cipher/types'
-
-interface WorkerRequest {
-  id: string
-  action: 'encrypt' | 'decrypt'
-  cipherId: string
-  input: string
-  key: string
-  options?: any
-}
-
-interface WorkerResponse {
-  id: string
-  success: boolean
-  result?: CipherResult
-  error?: string
-}
-
-type WorkerResponseMessage = WorkerResponse | Uint8Array;
+import type { WorkerRequest, WorkerResponse } from '../../types/worker'
 
 export function useCipherWorker() {
   const workerRef = useRef<Worker | null>(null)
@@ -76,9 +59,9 @@ export function useCipherWorker() {
     )
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      const { id, success, result, error: workerError } = event.data
+      const { requestId, success, payload } = event.data
 
-      const request = activeRequestsRef.current.get(id)
+      const request = activeRequestsRef.current.get(requestId)
 
       if (request) {
         if (request.timeoutId) {
@@ -88,12 +71,12 @@ export function useCipherWorker() {
           request.signal.removeEventListener('abort', request.onAbort)
         }
 
-        if (success && result) {
-          request.resolve(result)
+        if (success && payload.result) {
+          request.resolve(payload.result)
         } else {
-          request.reject(new Error(workerError || 'Unknown worker error'))
+          request.reject(new Error(payload.error || 'Unknown worker error'))
         }
-        activeRequestsRef.current.delete(id)
+        activeRequestsRef.current.delete(requestId)
       }
 
       if (activeRequestsRef.current.size === 0) {
@@ -178,14 +161,17 @@ export function useCipherWorker() {
         try {
           // Strip AbortSignal from options since it's not JSON serializable
           const { signal: _, ...serializableOptions } = options || {}
-          const payloadStr = JSON.stringify({
-            id,
-            action,
-            cipherId,
-            input,
-            key,
-            options: serializableOptions,
-          })
+          const requestMessage: WorkerRequest = {
+            type: action,
+            requestId: id,
+            payload: {
+              cipherId,
+              input,
+              key,
+              options: serializableOptions,
+            },
+          }
+          const payloadStr = JSON.stringify(requestMessage)
           const encoder = new TextEncoder()
           const payloadBuffer = encoder.encode(payloadStr)
 
