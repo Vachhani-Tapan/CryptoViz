@@ -10,6 +10,57 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type { CipherResult } from '../cipher/types'
 import type { WorkerRequest, WorkerResponse } from '../../types/worker'
 
+const MAX_CACHE_SIZE = 200
+const resultCache = new Map<string, CipherResult>()
+
+export function clearCipherWorkerCache() {
+  resultCache.clear()
+}
+
+function sortObjectKeys(obj: any): any {
+  if (obj === null || typeof obj !== 'object') {
+    return obj
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(sortObjectKeys)
+  }
+  const sortedKeys = Object.keys(obj).sort()
+  const result: any = {}
+  for (const k of sortedKeys) {
+    result[k] = sortObjectKeys(obj[k])
+  }
+  return result
+}
+
+function getCacheKey(
+  action: 'encrypt' | 'decrypt',
+  cipherId: string,
+  input: string,
+  key: string,
+  options?: any
+): string {
+  const { signal: _, bypassCache: __, ...cacheableOptions } = options || {}
+  return JSON.stringify({
+    action,
+    cipherId,
+    input,
+    key,
+    options: sortObjectKeys(cacheableOptions),
+  })
+}
+
+function cacheResult(key: string, result: CipherResult) {
+  if (resultCache.has(key)) {
+    resultCache.delete(key)
+  } else if (resultCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = resultCache.keys().next().value
+    if (oldestKey !== undefined) {
+      resultCache.delete(oldestKey)
+    }
+  }
+  resultCache.set(key, result)
+}
+
 export function useCipherWorker() {
   const workerRef = useRef<Worker | null>(null)
   const [loading, setLoading] = useState(false)
@@ -25,6 +76,7 @@ export function useCipherWorker() {
         signal?: AbortSignal
         onAbort?: () => void
         timeoutId?: NodeJS.Timeout
+        cacheKey?: string
       }
     >
   >(new Map())
@@ -72,6 +124,9 @@ export function useCipherWorker() {
         }
 
         if (success && payload.result) {
+          if (request.cacheKey) {
+            cacheResult(request.cacheKey, payload.result)
+          }
           request.resolve(payload.result)
         } else {
           request.reject(new Error(payload.error || 'Unknown worker error'))
@@ -112,6 +167,11 @@ export function useCipherWorker() {
       key: string,
       options?: any
     ): Promise<CipherResult> => {
+      const cacheKey = getCacheKey(action, cipherId, input, key, options)
+      if (!options?.bypassCache && resultCache.has(cacheKey)) {
+        return Promise.resolve(resultCache.get(cacheKey)!)
+      }
+
       return new Promise<CipherResult>((resolve, reject) => {
         // Automatically cancel any previous running request to prevent overlap
         if (activeRequestsRef.current.size > 0) {
@@ -153,6 +213,7 @@ export function useCipherWorker() {
           signal,
           onAbort,
           timeoutId,
+          cacheKey,
         })
 
         setLoading(true)

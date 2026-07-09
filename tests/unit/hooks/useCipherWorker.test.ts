@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import { useCipherWorker } from '@/lib/hooks/useCipherWorker'
+import { useCipherWorker, clearCipherWorkerCache } from '@/lib/hooks/useCipherWorker'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 // Mock Worker class
@@ -26,6 +26,7 @@ describe('useCipherWorker', () => {
   beforeEach(() => {
     vi.stubGlobal('Worker', MockWorker)
     MockWorker.clearInstances()
+    clearCipherWorkerCache()
     vi.useFakeTimers()
   })
 
@@ -159,5 +160,124 @@ describe('useCipherWorker', () => {
     await expect(promise!).rejects.toThrowError('WORKER_TIMEOUT')
     expect(worker.terminate).toHaveBeenCalled()
     expect(result.current.error).toBe('WORKER_TIMEOUT')
+  })
+
+  it('memoizes/caches cipher results and avoids subsequent worker calls', async () => {
+    const { result } = renderHook(() => useCipherWorker())
+    const worker = MockWorker.lastInstance()!
+
+    // Run first time (should call worker)
+    let promise1: Promise<any>
+    act(() => {
+      promise1 = result.current.runCipher('encrypt', 'caesar', 'hello', '3')
+    })
+    expect(worker.postMessage).toHaveBeenCalledTimes(1)
+
+    const firstCallArgs = worker.postMessage.mock.calls[0]
+    const parsedPayload = JSON.parse(new TextDecoder().decode(firstCallArgs[0] as Uint8Array))
+
+    act(() => {
+      worker.onmessage!({
+        data: {
+          requestId: parsedPayload.requestId,
+          success: true,
+          payload: { result: { output: 'khoor', steps: [], durationMs: 4, metadata: { name: 'Caesar', securityStatus: 'broken' } } }
+        }
+      } as MessageEvent)
+    })
+    const res1 = await promise1!
+    expect(res1.output).toBe('khoor')
+
+    // Run second time with same inputs (should be instant and not call worker again)
+    let promise2: Promise<any>
+    act(() => {
+      promise2 = result.current.runCipher('encrypt', 'caesar', 'hello', '3')
+    })
+
+    const res2 = await promise2!
+    expect(res2.output).toBe('khoor')
+    expect(worker.postMessage).toHaveBeenCalledTimes(1) // Call count remains 1
+  })
+
+  it('bypasses the cache when bypassCache is set to true', async () => {
+    const { result } = renderHook(() => useCipherWorker())
+    const worker = MockWorker.lastInstance()!
+
+    // Run first time (should call worker)
+    let promise1: Promise<any>
+    act(() => {
+      promise1 = result.current.runCipher('encrypt', 'caesar', 'hello', '3')
+    })
+    const firstCallArgs = worker.postMessage.mock.calls[0]
+    const parsedPayload = JSON.parse(new TextDecoder().decode(firstCallArgs[0] as Uint8Array))
+
+    act(() => {
+      worker.onmessage!({
+        data: {
+          requestId: parsedPayload.requestId,
+          success: true,
+          payload: { result: { output: 'khoor', steps: [], durationMs: 4, metadata: { name: 'Caesar', securityStatus: 'broken' } } }
+        }
+      } as MessageEvent)
+    })
+    await promise1!
+
+    // Run second time with bypassCache: true (should call worker again)
+    let promise2: Promise<any>
+    act(() => {
+      promise2 = result.current.runCipher('encrypt', 'caesar', 'hello', '3', { bypassCache: true })
+    })
+
+    expect(worker.postMessage).toHaveBeenCalledTimes(2) // Calls worker again
+  })
+
+  it('respects the LRU cache limit and evicts the oldest items', async () => {
+    const { result } = renderHook(() => useCipherWorker())
+    const worker = MockWorker.lastInstance()!
+
+    // Populate the cache with MAX_CACHE_SIZE (200) items
+    for (let i = 0; i <= 200; i++) {
+      let promise: Promise<any>
+      act(() => {
+        promise = result.current.runCipher('encrypt', 'caesar', `input-${i}`, '3')
+      })
+
+      // The loop will spawn new workers when terminated/recreated, so get the current active worker
+      const activeWorker = MockWorker.lastInstance()!
+      const calls = activeWorker.postMessage.mock.calls
+      const lastCall = calls[calls.length - 1]
+      const parsedPayload = JSON.parse(new TextDecoder().decode(lastCall[0] as Uint8Array))
+
+      act(() => {
+        activeWorker.onmessage!({
+          data: {
+            requestId: parsedPayload.requestId,
+            success: true,
+            payload: { result: { output: `output-${i}`, steps: [], durationMs: 1, metadata: { name: 'Caesar', securityStatus: 'broken' } } }
+          }
+        } as MessageEvent)
+      })
+      await promise!
+    }
+
+    // Cache size limit is 200. We just inserted 201 items (index 0 to 200).
+    // The very first item (index 0) should be evicted.
+    // Querying index 1 (second item) should still be cached:
+    const activeWorker = MockWorker.lastInstance()!
+    activeWorker.postMessage.mockClear()
+
+    let promiseCached: Promise<any>
+    act(() => {
+      promiseCached = result.current.runCipher('encrypt', 'caesar', 'input-1', '3')
+    })
+    await promiseCached!
+    expect(activeWorker.postMessage).not.toHaveBeenCalled() // Retained in cache!
+
+    // Querying index 0 (first item) should NOT be cached and call worker:
+    let promiseEvicted: Promise<any>
+    act(() => {
+      promiseEvicted = result.current.runCipher('encrypt', 'caesar', 'input-0', '3')
+    })
+    expect(activeWorker.postMessage).toHaveBeenCalledTimes(1) // Evicted and called worker!
   })
 })
