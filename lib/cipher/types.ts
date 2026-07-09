@@ -43,7 +43,6 @@ export interface CipherMetadata {
   keySize?: number
   blockSize?: number
   rounds?: number
-  modeOfOperation?: string
   securityStatus: 'secure' | 'legacy' | 'deprecated' | 'broken'
   breakingComplexity?: string
   yearDesigned?: number
