@@ -35,7 +35,7 @@ describe('Caesar Cipher Unit Tests', () => {
     expect(encrypt('Hello, World!', '1').output).toBe('Ifmmp, Xpsme!')
   })
 
- // TODO: skipped — encrypt() doesn't validate >4096 byte input yet, tracked in #<issue-number>
+ // TODO: skipped — encrypt() doesn't validate >4096 byte input yet, tracked in #110
   it.skip('throws correct errors for invalid input and keys', () => {
     expect(() => encrypt('', '3')).toThrowError(CipherError)
     expect(() => encrypt('', '3')).toThrow(/required/)
