@@ -79,6 +79,11 @@ export function preparePlaintext(input: string): string {
   return prepared
 }
 
+// Prepares ciphertext for Playfair decryption
+export function prepareCiphertext(input: string): string {
+  return input.toUpperCase().replace(/J/g, 'I').replace(/[^A-Z]/g, '')
+}
+
 function playfairInstrumented(
   input: string,
   key: string,
@@ -101,13 +106,15 @@ function playfairInstrumented(
   })
 
   // Prepare input text
-  const prepared = preparePlaintext(input)
+  const prepared = decrypt ? prepareCiphertext(input) : preparePlaintext(input)
   steps.push({
     index: 1,
-    label: 'Plaintext preparation',
+    label: decrypt ? 'Ciphertext preparation' : 'Plaintext preparation',
     inputState: input,
     outputState: prepared,
-    note: `Input cleaned: non-alpha removed, J replaced by I, X inserted between duplicate letters in bigrams, and padded to even length: "${prepared}"`,
+    note: decrypt
+      ? `Input cleaned: non-alpha removed, J replaced by I: "${prepared}"`
+      : `Input cleaned: non-alpha removed, J replaced by I, X inserted between duplicate letters in bigrams, and padded to even length: "${prepared}"`,
   })
 
   // Process bigrams
@@ -209,7 +216,7 @@ function playfairFast(
 ): CipherResult {
   const start = performance.now()
   const { grid, letterMap } = generateGrid(key)
-  const prepared = preparePlaintext(input)
+  const prepared = decrypt ? prepareCiphertext(input) : preparePlaintext(input)
 
   let output = ''
   for (let i = 0; i < prepared.length; i += 2) {
