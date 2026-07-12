@@ -1,5 +1,6 @@
 "use client";
 
+import React from 'react';
 import type { BenchmarkResult } from "@/types/benchmark";
 import { calculateComparison } from "@/lib/utils/benchmark";
 import { formatBytes } from "@/lib/utils/benchmarkHistory";
@@ -8,7 +9,7 @@ interface PerformanceMetricsProps {
   results: BenchmarkResult[];
 }
 
-export default function PerformanceMetrics({
+export default React.memo(function PerformanceMetrics({
   results,
 }: PerformanceMetricsProps) {
   if (results.length === 0) {
@@ -137,4 +138,4 @@ export default function PerformanceMetrics({
       </div>
     </div>
   );
-}
+});

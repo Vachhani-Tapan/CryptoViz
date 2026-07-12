@@ -1,20 +1,14 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useRef } from "react";
-import type { CipherDefinition } from "../../lib/cipher/registry";
-import { useCipherWorker } from "../../lib/hooks/useCipherWorker";
-import StepAnimator from "./StepAnimator";
-import TraceTransferControls from "./TraceTransferControls";
-import {
-  traceToCipherResult,
-  type CipherTraceFile,
-} from "../../lib/utils/cipherTrace";
-import type { CipherResult } from "../../lib/cipher/types";
-import dynamic from "next/dynamic";
-
-const PlayfairGrid = dynamic(() => import("./PlayfairGrid"), { ssr: false });
-const RailFenceViz = dynamic(() => import("./RailFenceViz"), { ssr: false });
-const DHVisualizer = dynamic(() => import("./DHVisualizer"), { ssr: false });
+import { useState, useEffect, useRef } from 'react'
+import React from 'react'
+import dynamic from 'next/dynamic'
+import type { CipherDefinition } from '../../lib/cipher/registry'
+import { useCipherWorker } from '../../lib/hooks/useCipherWorker'
+const StepAnimator = dynamic(() => import('./StepAnimator'), { ssr: false })
+const PlayfairGrid = dynamic(() => import('./PlayfairGrid'), { ssr: false })
+const RailFenceViz = dynamic(() => import('./RailFenceViz'), { ssr: false })
+const DHVisualizer = dynamic(() => import('./DHVisualizer'), { ssr: false })
 
 interface CipherLayoutProps {
   cipher: CipherDefinition;
@@ -231,21 +225,12 @@ export default function CipherLayout({ cipher }: CipherLayoutProps) {
     if (!autoCompute) return;
 
     const debounceId = setTimeout(() => {
-      void handleRun();
-    }, 450);
+      void handleRun()
+    }, 450)
 
-    return () => clearTimeout(debounceId);
-  }, [
-    autoCompute,
-    cipher,
-    input,
-    key,
-    action,
-    hexInput,
-    rounds,
-    demoMode,
-    bobSecret,
-  ]);
+    return () => clearTimeout(debounceId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCompute, cipher, input, key, action, hexInput, rounds, demoMode, bobSecret])
 
   // Helper for status badge styling
   const getStatusBadge = (status: "secure" | "deprecated" | "broken") => {
@@ -659,5 +644,5 @@ export default function CipherLayout({ cipher }: CipherLayoutProps) {
         </div>
       </div>
     </div>
-  );
-}
+  )
+})

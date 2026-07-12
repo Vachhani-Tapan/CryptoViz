@@ -14,10 +14,14 @@ import {
   loadBenchmarkHistory,
   saveBenchmarkHistory,
 } from "@/lib/utils/benchmarkHistory";
+import dynamic from 'next/dynamic'
 import AlgorithmSelector from "@/components/benchmark/AlgorithmSelector";
 import BenchmarkControls from "@/components/benchmark/BenchmarkControls";
 import PerformanceMetrics from "@/components/benchmark/PerformanceMetrics";
-import ComparisonChart from "@/components/benchmark/ComparisonChart";
+const ComparisonChart = dynamic(() => import('@/components/benchmark/ComparisonChart'), { 
+  ssr: false, 
+  loading: () => <div className="h-96 flex items-center justify-center rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"><p className="text-zinc-500 dark:text-zinc-400">Loading chart components...</p></div> 
+});
 import DeviceInfoDisplay from "@/components/benchmark/DeviceInfoDisplay";
 import ExportButton from "@/components/benchmark/ExportButton";
 import CategoryTabs from "@/components/benchmark/CategoryTabs";

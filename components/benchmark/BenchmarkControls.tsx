@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import React, { useCallback } from 'react'
 import { PRESET_INPUT_SIZES, PRESET_ITERATIONS } from '@/lib/utils/benchmark'
 
 interface BenchmarkControlsProps {
@@ -12,7 +12,7 @@ interface BenchmarkControlsProps {
   onBenchmarkStart: () => void
 }
 
-export default function BenchmarkControls({
+export default React.memo(function BenchmarkControls({
   inputSize,
   iterations,
   isRunning,
@@ -148,4 +148,4 @@ className="w-full rounded-lg bg-teal-600 px-4 py-3 font-semibold text-white shad
       </button>
     </div>
   )
-}
+})

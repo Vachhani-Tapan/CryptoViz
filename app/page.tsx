@@ -2,14 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState, useMemo } from "react";
 import { Analytics } from "@vercel/analytics/next"
+import dynamic from 'next/dynamic';
 import Navbar from "../components/layout/Navbar";
-import Typewriter from "../components/layout/typewriter";
+const Typewriter = dynamic(() => import("../components/layout/typewriter"), { ssr: false });
+import SkeletonCard from "../components/ui/SkeletonCard";
 
 import Footer from "../components/layout/footer";
 export default function Home() {
 
-  const categories = [
+  const categories = useMemo(() => [
     {
       title: "Classical Ciphers",
       description:
@@ -98,7 +101,7 @@ export default function Home() {
       link: "/visualizer/rsa/",
       glowClass: "hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] dark:hover:shadow-[0_0_25px_rgba(244,63,94,0.15)]"
     },
-  ];
+  ], []);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans transition-colors duration-300">

@@ -1,11 +1,13 @@
 'use client'
 
+import React from 'react';
+
 interface CategoryTabsProps {
   selectedCategory: 'all' | 'classical' | 'symmetric' | 'asymmetric' | 'hash'
   onCategoryChange: (category: 'all' | 'classical' | 'symmetric' | 'asymmetric' | 'hash') => void
 }
 
-export default function CategoryTabs({
+export default React.memo(function CategoryTabs({
   selectedCategory,
   onCategoryChange,
 }: CategoryTabsProps) {
@@ -43,4 +45,4 @@ export default function CategoryTabs({
       ))}
     </div>
   )
-}
+})

@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useMemo, useCallback } from 'react'
 import { BenchmarkResult } from '@/types/benchmark'
 import {
   BarChart,
@@ -76,7 +77,7 @@ interface ComparisonChartProps {
   chartType?: 'bar' | 'line' | 'scatter'
 }
 
-export default function ComparisonChart({
+export default React.memo(function ComparisonChart({
   results,
   chartType = 'bar',
 }: ComparisonChartProps) {
@@ -88,7 +89,7 @@ export default function ComparisonChart({
     )
   }
 
-  const chartData = results.map((result) => ({
+  const chartData = useMemo(() => results.map((result) => ({
     name: result.cipherName.substring(0, 15), // Truncate long names
     avgTime: parseFloat(result.averageTime.toFixed(4)),
     minTime: parseFloat(result.minTime.toFixed(4)),
@@ -96,11 +97,11 @@ export default function ComparisonChart({
     opsPerSec: parseFloat(result.operationsPerSecond.toFixed(0)),
     fullName: result.cipherName,
     category: result.category,
-  }))
+  })), [results])
 
-  const sortedData = [...chartData].sort((a, b) => a.avgTime - b.avgTime)
+  const sortedData = useMemo(() => [...chartData].sort((a, b) => a.avgTime - b.avgTime), [chartData])
 
-  const renderChart = () => {
+  const renderChart = useCallback(() => {
     switch (chartType) {
       case 'line':
         return (
@@ -206,7 +207,7 @@ export default function ComparisonChart({
           </BarChart>
         )
     }
-  }
+  }, [chartType, sortedData])
 
   return (
     <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
@@ -259,4 +260,4 @@ export default function ComparisonChart({
       </div>
     </div>
   )
-}
+})

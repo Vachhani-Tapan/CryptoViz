@@ -22,22 +22,23 @@ export default function Typewriter({
     const fullWord = words[currentWordIndex];
 
     if (!isDeleting) {
-      timer = setTimeout(() => {
-        setCurrentText(fullWord.substring(0, currentText.length + 1));
-      }, typingSpeed);
-
       if (currentText === fullWord) {
-        clearTimeout(timer);
         timer = setTimeout(() => setIsDeleting(true), delayBetweenWords);
+      } else {
+        timer = setTimeout(() => {
+          setCurrentText(fullWord.substring(0, currentText.length + 1));
+        }, typingSpeed);
       }
     } else {
-      timer = setTimeout(() => {
-        setCurrentText(fullWord.substring(0, currentText.length - 1));
-      }, deletingSpeed);
-
       if (currentText === "") {
-        setIsDeleting(false);
-        setCurrentWordIndex((prev) => (prev + 1) % words.length);
+        timer = setTimeout(() => {
+          setIsDeleting(false);
+          setCurrentWordIndex((prev) => (prev + 1) % words.length);
+        }, 0);
+      } else {
+        timer = setTimeout(() => {
+          setCurrentText(fullWord.substring(0, currentText.length - 1));
+        }, deletingSpeed);
       }
     }
 

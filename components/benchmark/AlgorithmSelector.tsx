@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { CIPHER_REGISTRY } from '@/lib/cipher/registry'
 
 interface AlgorithmSelectorProps {
@@ -9,14 +9,14 @@ interface AlgorithmSelectorProps {
   category?: 'classical' | 'symmetric' | 'hash' | 'asymmetric' | null
 }
 
-export default function AlgorithmSelector({
+export default React.memo(function AlgorithmSelector({
   selectedAlgorithms,
   onSelectionChange,
   category = null,
 }: AlgorithmSelectorProps) {
-  const filteredCiphers = category
+  const filteredCiphers = useMemo(() => category
     ? CIPHER_REGISTRY.filter((c) => c.category === category)
-    : CIPHER_REGISTRY
+    : CIPHER_REGISTRY, [category])
 
   const handleToggle = useCallback(
     (cipherId: string) => {
@@ -96,4 +96,4 @@ className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-2
       </div>
     </div>
   )
-}
+})
